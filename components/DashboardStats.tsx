@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  LineChart, Line, PieChart, Pie, Cell 
+  LineChart, Line
 } from 'recharts';
 import { User, UserRole, FactoryLocation } from '../types';
 import { MOCK_PRODUCTION_DATA, MOCK_FINANCIALS, MOCK_STOCK } from '../constants';
@@ -12,11 +12,9 @@ interface DashboardStatsProps {
   activeTab: string;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-
 const DashboardStats: React.FC<DashboardStatsProps> = ({ user, activeTab }) => {
   
-  // Filter data based on user role (Admin sees all, Gerant sees their factory)
+  // Filter data based on user role
   const filteredProduction = useMemo(() => {
     return user.role === UserRole.ADMIN 
       ? MOCK_PRODUCTION_DATA 
@@ -35,7 +33,28 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ user, activeTab }) => {
       : MOCK_STOCK.filter(d => d.factory === user.factory);
   }, [user]);
 
-  // Aggregate stats for "Vue d'ensemble"
+  // Prepare comparison data for Admin view
+  const comparisonData = useMemo(() => {
+    if (user.role !== UserRole.ADMIN) return [];
+    
+    const dataMap = new Map<string, { month: string, lome: number, bassar: number }>();
+    
+    MOCK_FINANCIALS.forEach(item => {
+      if (!dataMap.has(item.month)) {
+        dataMap.set(item.month, { month: item.month, lome: 0, bassar: 0 });
+      }
+      const entry = dataMap.get(item.month)!;
+      if (item.factory === FactoryLocation.LOME) {
+        entry.lome = item.revenue;
+      } else if (item.factory === FactoryLocation.BASSAR) {
+        entry.bassar = item.revenue;
+      }
+    });
+    
+    return Array.from(dataMap.values());
+  }, [user]);
+
+  // Aggregate stats
   const totalProduction = filteredProduction.reduce((acc, curr) => acc + curr.quantityProduced, 0);
   const totalWaste = filteredProduction.reduce((acc, curr) => acc + curr.waste, 0);
   const totalRevenue = filteredFinancials.reduce((acc, curr) => acc + curr.revenue, 0);
@@ -43,122 +62,148 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ user, activeTab }) => {
 
   // Render helpers
   const renderOverview = () => (
-    <div className="space-y-6">
+    <div className="container-fluid p-0">
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Production Totale</p>
-              <h3 className="text-2xl font-bold text-gray-800 mt-2">{totalProduction.toLocaleString()}</h3>
-              <p className="text-xs text-green-600 mt-1 flex items-center">
-                <TrendingUp size={12} className="mr-1" /> +12% ce mois
-              </p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
-              <Package size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Chiffre d'Affaires</p>
-              <h3 className="text-2xl font-bold text-gray-800 mt-2">{totalRevenue.toLocaleString()} FCFA</h3>
-              <p className="text-xs text-green-600 mt-1 flex items-center">
-                <TrendingUp size={12} className="mr-1" /> +8% vs N-1
-              </p>
-            </div>
-            <div className="p-3 bg-green-50 rounded-lg text-green-600">
-              <DollarSign size={24} />
+      <div className="row g-4 mb-4">
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <p className="text-secondary small fw-bold mb-1">Production Totale</p>
+                  <h3 className="fw-bold text-dark mb-1">{totalProduction.toLocaleString()}</h3>
+                  <p className="small text-success mb-0 d-flex align-items-center">
+                    <TrendingUp size={12} className="me-1" /> +12% ce mois
+                  </p>
+                </div>
+                <div className="p-3 bg-primary bg-opacity-10 rounded text-primary">
+                  <Package size={24} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Pertes / Dégâts</p>
-              <h3 className="text-2xl font-bold text-gray-800 mt-2">{totalWaste.toLocaleString()}</h3>
-              <p className="text-xs text-red-500 mt-1">
-                 Attention requise
-              </p>
-            </div>
-            <div className="p-3 bg-red-50 rounded-lg text-red-600">
-              <AlertTriangle size={24} />
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <p className="text-secondary small fw-bold mb-1">Chiffre d'Affaires</p>
+                  <h3 className="fw-bold text-dark mb-1">{totalRevenue.toLocaleString()} FCFA</h3>
+                  <p className="small text-success mb-0 d-flex align-items-center">
+                    <TrendingUp size={12} className="me-1" /> +8% vs N-1
+                  </p>
+                </div>
+                <div className="p-3 bg-success bg-opacity-10 rounded text-success">
+                  <DollarSign size={24} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Bénéfice Net</p>
-              <h3 className="text-2xl font-bold text-gray-800 mt-2">{(totalRevenue - totalExpenses).toLocaleString()} FCFA</h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Marge calculée
-              </p>
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <p className="text-secondary small fw-bold mb-1">Pertes / Dégâts</p>
+                  <h3 className="fw-bold text-dark mb-1">{totalWaste.toLocaleString()}</h3>
+                  <p className="small text-danger mb-0">
+                     Attention requise
+                  </p>
+                </div>
+                <div className="p-3 bg-danger bg-opacity-10 rounded text-danger">
+                  <AlertTriangle size={24} />
+                </div>
+              </div>
             </div>
-            <div className="p-3 bg-purple-50 rounded-lg text-purple-600">
-              <DollarSign size={24} />
+          </div>
+        </div>
+
+        <div className="col-12 col-md-6 col-xl-3">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <p className="text-secondary small fw-bold mb-1">Bénéfice Net</p>
+                  <h3 className="fw-bold text-dark mb-1">{(totalRevenue - totalExpenses).toLocaleString()} FCFA</h3>
+                  <p className="small text-muted mb-0">
+                    Marge calculée
+                  </p>
+                </div>
+                <div className="p-3 bg-warning bg-opacity-10 rounded text-warning">
+                  <DollarSign size={24} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Production Récente</h4>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={filteredProduction.slice(-7)}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={(val) => val.split('-')[2]} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="quantityProduced" name="Sachets Produits" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Charts Row */}
+      <div className="row g-4 mb-4">
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <h5 className="card-title fw-bold text-dark mb-4">Production Récente</h5>
+              <div style={{ height: '320px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={filteredProduction.slice(-7)}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={(val) => val.split('-')[2]} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="quantityProduced" name="Sachets Produits" fill="#0d6efd" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Finances (Revenus vs Dépenses)</h4>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={filteredFinancials}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="revenue" name="Revenus" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="expenses" name="Dépenses" stroke="#ef4444" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <h5 className="card-title fw-bold text-dark mb-4">Finances (Revenus vs Dépenses)</h5>
+              <div style={{ height: '320px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={filteredFinancials}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="revenue" name="Revenus" stroke="#198754" strokeWidth={2} />
+                    <Line type="monotone" dataKey="expenses" name="Dépenses" stroke="#dc3545" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Comparison for Admin */}
       {user.role === UserRole.ADMIN && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Comparatif Lomé vs Bassar (Revenue)</h4>
-          <div className="h-80">
+        <div className="card border-0 shadow-sm mb-4">
+          <div className="card-body">
+            <h5 className="card-title fw-bold text-dark mb-4">Comparatif Lomé vs Bassar (Revenus)</h5>
+            <div style={{ height: '320px' }}>
              <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MOCK_FINANCIALS}>
+              <BarChart data={comparisonData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="revenue" data={MOCK_FINANCIALS.filter(d => d.factory === FactoryLocation.LOME)} name="Lomé" fill="#3b82f6" />
-                <Bar dataKey="revenue" data={MOCK_FINANCIALS.filter(d => d.factory === FactoryLocation.BASSAR)} name="Bassar" fill="#f59e0b" />
+                <Bar dataKey="lome" name="Lomé" fill="#0d6efd" />
+                <Bar dataKey="bassar" name="Bassar" fill="#ffc107" />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           </div>
         </div>
       )}
@@ -166,36 +211,36 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ user, activeTab }) => {
   );
 
   const renderStock = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-800">État des Stocks & Matériel</h3>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+    <div className="card border-0 shadow-sm">
+      <div className="card-header bg-white border-bottom border-light py-3 d-flex justify-content-between align-items-center">
+        <h5 className="mb-0 fw-bold text-dark">État des Stocks & Matériel</h5>
+        <button className="btn btn-primary btn-sm">
           + Nouvelle Entrée
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-600 text-sm">
+      <div className="table-responsive">
+        <table className="table table-hover align-middle mb-0">
+          <thead className="table-light text-secondary">
             <tr>
-              <th className="p-4 font-medium">Article</th>
-              <th className="p-4 font-medium">Usine</th>
-              <th className="p-4 font-medium">Quantité</th>
-              <th className="p-4 font-medium">Unité</th>
-              <th className="p-4 font-medium">Statut</th>
+              <th className="py-3 ps-4">Article</th>
+              <th className="py-3">Usine</th>
+              <th className="py-3">Quantité</th>
+              <th className="py-3">Unité</th>
+              <th className="py-3 pe-4">Statut</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody>
             {filteredStock.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="p-4 text-gray-800 font-medium">{item.name}</td>
-                <td className="p-4 text-gray-600">{item.factory}</td>
-                <td className="p-4 text-gray-800 font-bold">{item.quantity}</td>
-                <td className="p-4 text-gray-500">{item.unit}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                    ${item.status === 'ok' ? 'bg-green-100 text-green-700' : 
-                      item.status === 'low' ? 'bg-yellow-100 text-yellow-700' : 
-                      'bg-red-100 text-red-700'}`}>
+              <tr key={item.id}>
+                <td className="ps-4 fw-medium text-dark">{item.name}</td>
+                <td className="text-muted">{item.factory}</td>
+                <td className="fw-bold">{item.quantity}</td>
+                <td className="text-muted">{item.unit}</td>
+                <td className="pe-4">
+                  <span className={`badge rounded-pill
+                    ${item.status === 'ok' ? 'bg-success bg-opacity-10 text-success' : 
+                      item.status === 'low' ? 'bg-warning bg-opacity-10 text-warning' : 
+                      'bg-danger bg-opacity-10 text-danger'}`}>
                     {item.status === 'ok' ? 'Normal' : item.status === 'low' ? 'Bas' : 'Critique'}
                   </span>
                 </td>
@@ -208,41 +253,46 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ user, activeTab }) => {
   );
 
   const renderReports = () => (
-    <div className="space-y-6">
-       <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl flex items-center justify-between">
-         <div>
-           <h3 className="text-lg font-semibold text-blue-900">Génération de Rapports</h3>
-           <p className="text-blue-700 mt-1">Téléchargez les rapports mensuels et les analyses de production en format PDF.</p>
+    <div className="container-fluid p-0">
+       <div className="alert alert-primary d-flex align-items-center border-0 bg-primary bg-opacity-10 text-primary p-4 rounded-3 mb-4">
+         <div className="flex-grow-1">
+           <h4 className="alert-heading fw-bold">Génération de Rapports</h4>
+           <p className="mb-0">Téléchargez les rapports mensuels et les analyses de production en format PDF.</p>
          </div>
-         <FileText size={48} className="text-blue-300" />
+         <FileText size={48} className="text-primary opacity-50 ms-3" />
        </div>
 
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+       <div className="row g-4">
           {['Rapport de Production', 'Rapport Financier', 'Rapport des Ventes'].map((report, idx) => (
-            <div key={idx} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
-              <div className="h-12 w-12 bg-red-50 rounded-lg flex items-center justify-center text-red-500 mb-4 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
-                <FileText size={24} />
+            <div key={idx} className="col-12 col-md-4">
+              <div className="card border-0 shadow-sm hover-shadow h-100">
+                <div className="card-body p-4">
+                  <div className="d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-3" style={{ width: '48px', height: '48px' }}>
+                    <FileText size={24} />
+                  </div>
+                  <h5 className="fw-bold mt-3 mb-2 text-dark">{report}</h5>
+                  <p className="text-muted small mb-4">Dernière mise à jour: Hier</p>
+                  <button className="btn btn-link text-decoration-none p-0 fw-bold">Télécharger PDF &rarr;</button>
+                </div>
               </div>
-              <h4 className="font-semibold text-gray-800">{report}</h4>
-              <p className="text-sm text-gray-500 mt-2">Dernière mise à jour: Hier</p>
-              <button className="mt-4 text-sm font-medium text-blue-600 hover:text-blue-800">Télécharger PDF &rarr;</button>
             </div>
           ))}
        </div>
     </div>
   );
 
-  // Simple placeholder for other tabs
   const renderPlaceholder = (title: string) => (
-    <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
-      <div className="inline-block p-4 bg-gray-100 rounded-full mb-4">
-        <Package size={32} className="text-gray-400" />
+    <div className="card border-0 shadow-sm py-5">
+      <div className="card-body text-center">
+        <div className="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style={{ width: '80px', height: '80px' }}>
+          <Package size={32} className="text-secondary opacity-50" />
+        </div>
+        <h3 className="fw-bold text-dark mb-2">{title}</h3>
+        <p className="text-muted mx-auto" style={{ maxWidth: '400px' }}>
+          Cette section permettrait la gestion détaillée de {title.toLowerCase()}. 
+          Fonctionnalité complète à implémenter selon le cahier des charges.
+        </p>
       </div>
-      <h3 className="text-xl font-bold text-gray-800 mb-2">{title}</h3>
-      <p className="text-gray-500 max-w-md mx-auto">
-        Cette section permettrait la gestion détaillée de {title.toLowerCase()}. 
-        Fonctionnalité complète à implémenter selon le cahier des charges.
-      </p>
     </div>
   );
 

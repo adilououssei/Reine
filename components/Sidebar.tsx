@@ -1,6 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, Factory, Package, DollarSign, Users, FileText, Droplets } from 'lucide-react';
-import { User, UserRole } from '../types';
+import { User } from '../types';
 
 interface SidebarProps {
   user: User;
@@ -10,7 +10,7 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, onClose }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
     { id: 'production', label: 'Production', icon: Factory },
@@ -25,36 +25,35 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark opacity-50 d-lg-none"
+          style={{ zIndex: 1035 }}
           onClick={onClose}
         />
       )}
 
       {/* Sidebar Container */}
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-slate-900 text-white z-30 transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        sidebar position-fixed top-0 start-0 h-100 d-flex flex-column
+        ${isOpen ? 'show' : ''}
       `}>
-        <div className="h-16 flex items-center px-6 border-b border-slate-700">
-          <Droplets className="text-blue-400 mr-2" size={24} />
-          <h1 className="text-lg font-bold tracking-wide">EAU LA REINE</h1>
+        <div className="d-flex align-items-center px-4 py-3 border-bottom border-secondary" style={{ height: '64px' }}>
+          <Droplets className="text-primary me-2" size={24} />
+          <h5 className="mb-0 fw-bold tracking-wide text-white">EAU LA REINE</h5>
         </div>
 
-        <div className="p-4">
-          <div className="text-xs uppercase text-slate-400 font-semibold mb-4 px-2">Menu Principal</div>
-          <nav className="space-y-1">
+        <div className="p-3 flex-grow-1 overflow-auto">
+          <div className="text-uppercase text-white-50 small fw-bold mb-3 px-2">Menu Principal</div>
+          <nav className="nav flex-column gap-1">
             {menuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => {
                   setActiveTab(item.id);
-                  if (window.innerWidth < 1024) onClose();
+                  if (window.innerWidth < 992) onClose();
                 }}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-sm font-medium
-                  ${activeTab === item.id 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                  nav-link d-flex align-items-center gap-3 px-3 py-2 rounded border-0 w-100 text-start
+                  ${activeTab === item.id ? 'active' : ''}
                 `}
               >
                 <item.icon size={20} />
@@ -64,11 +63,11 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
           </nav>
         </div>
 
-        <div className="absolute bottom-0 w-full p-4 border-t border-slate-800">
-          <div className="bg-slate-800 rounded-lg p-3 text-xs text-slate-400">
-            <p className="font-semibold text-slate-200">Support Technique</p>
-            <p className="mt-1">support@eaulareine.com</p>
-            <p>+228 00 00 00 00</p>
+        <div className="p-3 border-top border-secondary mt-auto">
+          <div className="bg-dark bg-opacity-25 p-3 rounded small text-white-50">
+            <p className="fw-bold text-white mb-1">Support Technique</p>
+            <p className="mb-0">support@eaulareine.com</p>
+            <p className="mb-0">+228 00 00 00 00</p>
           </div>
         </div>
       </aside>

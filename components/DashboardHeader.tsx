@@ -10,31 +10,34 @@ interface DashboardHeaderProps {
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout, toggleSidebar }) => {
   return (
-    <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 fixed w-full z-20 top-0 left-0 lg:pl-64 transition-all duration-300">
-      <div className="flex items-center gap-4">
-        <button onClick={toggleSidebar} className="lg:hidden text-gray-500 hover:text-blue-600">
-          <Menu size={24} />
-        </button>
-        <h2 className="text-xl font-semibold text-gray-800 hidden sm:block">
-          Tableau de bord - {user.factory || 'Global'}
-        </h2>
-      </div>
-      
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full">
-          <UserIcon size={16} />
-          <span className="font-medium">{user.name}</span>
-          <span className="text-xs uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded ml-1">
-            {user.role}
-          </span>
+    <header className="navbar navbar-expand bg-white shadow-sm fixed-top px-3 px-lg-4 header-navbar" style={{ transition: 'padding-left 0.3s' }}>
+      <div className="container-fluid p-0">
+        <div className="d-flex align-items-center w-100 justify-content-between">
+          <div className="d-flex align-items-center gap-3">
+            <button onClick={toggleSidebar} className="btn btn-link text-secondary d-lg-none p-0 border-0">
+              <Menu size={24} />
+            </button>
+            <h5 className="mb-0 text-dark fw-bold d-none d-sm-block">
+              Tableau de bord - {user.factory || 'Global'}
+            </h5>
+          </div>
+          
+          <div className="d-flex align-items-center gap-3">
+            <div className="d-flex align-items-center bg-light px-3 py-1 rounded-pill border">
+              <UserIcon size={16} className="text-secondary me-2" />
+              <span className="fw-medium small text-dark">{user.name}</span>
+              <span className="badge bg-primary-subtle text-primary border border-primary-subtle ms-2">{user.role}</span>
+            </div>
+            <button 
+              onClick={onLogout}
+              className="btn btn-outline-danger btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center"
+              title="Se déconnecter"
+              style={{ width: '36px', height: '36px' }}
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
-        <button 
-          onClick={onLogout}
-          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-          title="Se déconnecter"
-        >
-          <LogOut size={20} />
-        </button>
       </div>
     </header>
   );
